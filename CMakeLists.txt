@@ -1,6 +1,9 @@
 project(freegemas_project)
 cmake_minimum_required(VERSION 3.0)
 
+# link everything with
+# emcc -O3 *.o libjsoncpp.a -o index.html -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 -sSDL2_IMAGE_FORMATS='["png"]' -sUSE_SDL_TTF=2 -sUSE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS='["ogg"]' -sASYNCIFY --preload-file media
+
 # Append custom gettext path to CMAKE_PREFIX_PATH - only necessary on OS X.
 if (CMAKE_HOST_APPLE)
     find_program(HOMEBREW_PROG brew)
@@ -175,13 +178,13 @@ ELSEIF(WIN32)
 		)
 	endif()
 ELSE()
-	find_package(PkgConfig REQUIRED)
+	find_package(PkgConfig)
 
-	find_package(SDL2 REQUIRED)
-	pkg_search_module(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
-	pkg_search_module(SDL2TTF REQUIRED SDL2_ttf>=2.0.0)
-	pkg_search_module(SDL2MIXER REQUIRED SDL2_mixer>=2.0.0)
-	pkg_search_module(JSONCPP REQUIRED jsoncpp)
+	find_package(SDL2)
+	pkg_search_module(SDL2IMAGE SDL2_image>=2.0.0)
+	pkg_search_module(SDL2TTF SDL2_ttf>=2.0.0)
+	pkg_search_module(SDL2MIXER SDL2_mixer>=2.0.0)
+	pkg_search_module(JSONCPP jsoncpp)
 
 	include_directories(
 		${PROJECT_SOURCE_DIR}/include
@@ -201,6 +204,8 @@ ELSE()
 	${LIBINTL_LIBRARIES}
 	${JSONCPP_LIBRARIES}
 	)
+
+	target_link_options(freegemas PRIVATE -sERROR_ON_UNDEFINED_SYMBOLS=0)
 
 	add_custom_target(
 		link_media_folder
