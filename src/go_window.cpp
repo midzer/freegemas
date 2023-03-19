@@ -17,7 +17,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
     // Init SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
-        throw std::runtime_error(SDL_GetError());
+        //throw std::runtime_error(SDL_GetError());
     }
 
     // Set texture filtering to linear
@@ -28,7 +28,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
 
     if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
     {
-        throw std::runtime_error(Mix_GetError());
+        //throw std::runtime_error(Mix_GetError());
     }
 
     // Create window
@@ -44,7 +44,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
     // If window could not be created, throw an error
     if (mWindow == NULL )
     {
-        throw std::runtime_error(SDL_GetError());
+        //throw std::runtime_error(SDL_GetError());
     }
 
     SDL_GetWindowSize(mWindow, &mWindowWidth, &mWindowHeight);
@@ -55,7 +55,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
     // If rendered could not be created, throw an error
     if (mRenderer == NULL )
     {
-        throw std::runtime_error(SDL_GetError());
+        //throw std::runtime_error(SDL_GetError());
     }
 
     // Initialize texture to draw to
@@ -70,7 +70,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
 
     if( !( IMG_Init( imgFlags ) & imgFlags ) )
     {
-        throw std::runtime_error(IMG_GetError() );
+        //throw std::runtime_error(IMG_GetError() );
     }
 
     // Set full screen mode
