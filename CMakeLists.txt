@@ -1,9 +1,6 @@
 project(freegemas_project)
 cmake_minimum_required(VERSION 3.0)
 
-# link everything with
-# emcc -O3 -flto *.o libjsoncpp.a -o index.html -sUSE_SDL=2 -sUSE_SDL_IMAGE=2 -sSDL2_IMAGE_FORMATS='["png"]' -sUSE_SDL_TTF=2 -sUSE_SDL_MIXER=2 -sSDL2_MIXER_FORMATS='["ogg"]' -sASYNCIFY --closure 1 --preload-file media
-
 # Append custom gettext path to CMAKE_PREFIX_PATH - only necessary on OS X.
 if (CMAKE_HOST_APPLE)
     find_program(HOMEBREW_PROG brew)

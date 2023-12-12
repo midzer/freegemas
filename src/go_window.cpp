@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <emscripten.h>
 
 using namespace std;
 
@@ -115,18 +116,20 @@ void GoSDL::Window::show()
         // Get ticks
         newTicks = SDL_GetTicks();
 
-        // Render to a texture first instead of directly to the window
-        SDL_SetRenderTarget(mRenderer, mScreen);
-
         // Get ticks from last frame and compare with framerate
         if (newTicks - mLastTicks < mUpdateInterval)
         {
+            emscripten_sleep(1);
             continue;
         }
+
+        // Render to a texture first instead of directly to the window
+        SDL_SetRenderTarget(mRenderer, mScreen);
 
         // Event loop
         while (SDL_PollEvent (&e))
         {
+            //emscripten_sleep(1);
             switch (e.type)
             {
 
