@@ -45,7 +45,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
     }
 
     // Create renderer for the window
-    mRenderer = SDL_CreateRenderer( mWindow, -1, 0 );
+    mRenderer = SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED );
 
     // If rendered could not be created, throw an error
     if (mRenderer == NULL )
