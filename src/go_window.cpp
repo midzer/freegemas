@@ -4,21 +4,17 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <emscripten.h>
 
 using namespace std;
 
 
-GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, bool fullscreen, double updateInterval) :
-    mWidth(width), mHeight(height), mCaption(caption), mFullscreen(fullscreen), mUpdateInterval(updateInterval)
+GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, bool fullscreen, Uint32 updateInterval) :
+    mUpdateInterval(updateInterval)
 {
-    // Get starting ticks
-    mLastTicks = SDL_GetTicks();
-
     // Init SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
-        //throw std::runtime_error(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
 
     // Set texture filtering to linear
@@ -27,41 +23,38 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
         cerr << "Warning: Linear texture filtering not enabled!" << endl;
     }
 
-    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+    if( Mix_OpenAudio( MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 4096 ) < 0 )
     {
-        //throw std::runtime_error(Mix_GetError());
+        throw std::runtime_error(Mix_GetError());
     }
 
     // Create window
-    mWindow = SDL_CreateWindow( mCaption.c_str(),
+    mWindow = SDL_CreateWindow( caption.c_str(),
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                 #ifdef __vita__
                                     960, 544,
                                 #else
-                                    mWidth, mHeight,
+                                    width, height,
                                 #endif
-                                SDL_WINDOW_RESIZABLE );
+                                SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI );
 
     // If window could not be created, throw an error
     if (mWindow == NULL )
     {
-        //throw std::runtime_error(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
 
-    SDL_GetWindowSize(mWindow, &mWindowWidth, &mWindowHeight);
-
     // Create renderer for the window
-    mRenderer = SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED );
+    mRenderer = SDL_CreateRenderer( mWindow, -1, 0 );
 
     // If rendered could not be created, throw an error
     if (mRenderer == NULL )
     {
-        //throw std::runtime_error(SDL_GetError());
+        throw std::runtime_error(SDL_GetError());
     }
 
-    // Initialize texture to draw to
-    mScreen = SDL_CreateTexture(mRenderer, SDL_PIXELFORMAT_RGBA8888,
-                                 SDL_TEXTUREACCESS_TARGET, mWidth, mHeight);
+    // For proper scaling in all resolutions
+    SDL_RenderSetLogicalSize(mRenderer, width, height);
 
     // Initialize renderer color
     SDL_SetRenderDrawColor( mRenderer, 0, 0, 0, 255 );
@@ -71,7 +64,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, boo
 
     if( !( IMG_Init( imgFlags ) & imgFlags ) )
     {
-        //throw std::runtime_error(IMG_GetError() );
+        throw std::runtime_error(IMG_GetError() );
     }
 
     // Set full screen mode
@@ -101,6 +94,7 @@ void GoSDL::Window::show()
 {
     // To store the ticks passed between frames
     Uint32 newTicks;
+    Uint32 frameTime;
 
     // To poll events
     SDL_Event e;
@@ -116,20 +110,9 @@ void GoSDL::Window::show()
         // Get ticks
         newTicks = SDL_GetTicks();
 
-        // Get ticks from last frame and compare with framerate
-        if (newTicks - mLastTicks < mUpdateInterval)
-        {
-            emscripten_sleep(1);
-            continue;
-        }
-
-        // Render to a texture first instead of directly to the window
-        SDL_SetRenderTarget(mRenderer, mScreen);
-
         // Event loop
         while (SDL_PollEvent (&e))
         {
-            //emscripten_sleep(1);
             switch (e.type)
             {
 
@@ -149,8 +132,8 @@ void GoSDL::Window::show()
 
             case SDL_MOUSEMOTION:
                 mMouseActive = true;
-                mMouseX = (e.motion.x * mWidth) / mWindowWidth;
-                mMouseY = (e.motion.y * mHeight) / mWindowHeight;
+                mMouseX = e.motion.x;
+                mMouseY = e.motion.y;
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
@@ -173,17 +156,6 @@ void GoSDL::Window::show()
 
             case SDL_CONTROLLERDEVICEREMOVED:
                 closeDisconnectedGameControllers();
-                break;
-
-            case SDL_WINDOWEVENT:
-                switch (e.window.event)
-                {
-
-                case SDL_WINDOWEVENT_RESIZED:
-                    mWindowWidth = e.window.data1;
-                    mWindowHeight = e.window.data2;
-                    break;
-                }
                 break;
             }
         }
@@ -232,15 +204,17 @@ void GoSDL::Window::show()
         // Empty the drawing queue
         mDrawingQueue.clear();
 
-        // Render screen texture stretched out over the window
-        SDL_SetRenderTarget(mRenderer, NULL);
-        SDL_RenderCopy(mRenderer, mScreen, NULL, NULL);
+        // This measures how long this iteration of the loop took
+        frameTime = SDL_GetTicks() - newTicks;
+
+        // This keeps us from displaying more frames than 60/Second
+        if (mUpdateInterval > frameTime)
+        {
+            SDL_Delay(mUpdateInterval - frameTime - 2); // subtract draw margin for swap
+        }
 
         // Update the screen
         SDL_RenderPresent (mRenderer);
-
-        // Update the ticks
-        mLastTicks = newTicks;
     }
 
     // Exit point for goto within switch

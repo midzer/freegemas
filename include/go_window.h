@@ -27,7 +27,7 @@ namespace GoSDL {
          */
         Window (unsigned width, unsigned height,
                 std::string caption, bool fullscreen = false,
-                double updateInterval = 16.666666);
+                Uint32 updateInterval = 17);
 
         /**
          * @brief Destructor of the window
@@ -128,35 +128,11 @@ namespace GoSDL {
         // Called when closing the game
         void closeAllGameControllers();
 
-        // Texture used as render target
-        SDL_Texture * mScreen;
-
-        /// Screen width
-        unsigned mWidth;
-
-        /// Screen height
-        unsigned mHeight;
-
-        /// Window width
-        int mWindowWidth;
-
-        /// Window height
-        int mWindowHeight;
-
-        /// Window's caption
-        std::string mCaption;
-
-        /// Whether the game runs in fullscreen or not
-        bool mFullscreen;
-
         /// Running flag
         bool mShouldRun;
 
         /// Time interval between frames, in milliseconds
-        double mUpdateInterval;
-
-        /// Ticks recorded in last frame
-        Uint32 mLastTicks;
+        Uint32 mUpdateInterval;
 
         // Whether the mouse is in use
         bool mMouseActive = false;
