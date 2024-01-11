@@ -26,7 +26,7 @@ namespace GoSDL {
          * @param updateInterval Update interval in milliseconds, the inverse of fps
          */
         Window (unsigned width, unsigned height,
-                std::string caption, bool fullscreen = false,
+                std::string caption,
                 Uint32 updateInterval = 17);
 
         /**
@@ -133,6 +133,9 @@ namespace GoSDL {
 
         /// Time interval between frames, in milliseconds
         Uint32 mUpdateInterval;
+
+        /// Ticks recorded in last frame
+        Uint32 mLastTicks;
 
         // Whether the mouse is in use
         bool mMouseActive = false;

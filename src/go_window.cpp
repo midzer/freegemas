@@ -8,9 +8,12 @@
 using namespace std;
 
 
-GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, bool fullscreen, Uint32 updateInterval) :
+GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, Uint32 updateInterval) :
     mUpdateInterval(updateInterval)
 {
+    // Get starting ticks
+    mLastTicks = SDL_GetTicks();
+
     // Init SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
@@ -94,7 +97,6 @@ void GoSDL::Window::show()
 {
     // To store the ticks passed between frames
     Uint32 newTicks;
-    Uint32 frameTime;
 
     // To poll events
     SDL_Event e;
@@ -109,6 +111,13 @@ void GoSDL::Window::show()
 
         // Get ticks
         newTicks = SDL_GetTicks();
+
+        // Get ticks from last frame and compare with framerate
+        if (newTicks - mLastTicks < mUpdateInterval)
+        {
+            SDL_Delay(mUpdateInterval - (newTicks - mLastTicks));
+            continue;
+        }
 
         // Event loop
         while (SDL_PollEvent (&e))
@@ -204,17 +213,11 @@ void GoSDL::Window::show()
         // Empty the drawing queue
         mDrawingQueue.clear();
 
-        // This measures how long this iteration of the loop took
-        frameTime = SDL_GetTicks() - newTicks;
-
-        // This keeps us from displaying more frames than 60/Second
-        if (mUpdateInterval > frameTime)
-        {
-            SDL_Delay(mUpdateInterval - frameTime - 2); // subtract draw margin for swap
-        }
-
         // Update the screen
         SDL_RenderPresent (mRenderer);
+
+        // Update the ticks
+        mLastTicks = newTicks;
     }
 
     // Exit point for goto within switch
