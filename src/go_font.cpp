@@ -42,7 +42,7 @@ void GoSDL::Font::setPathAndSize(std::string path, unsigned size) {
 
     if (mFont == NULL) {
         printf("Oh My Goodness, an error : %s\n", TTF_GetError());
-        throw std::runtime_error("WAT");
+        //throw std::runtime_error("WAT");
     }
 
     // TODO: check for errors
