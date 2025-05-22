@@ -11,9 +11,6 @@ using namespace std;
 GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, Uint32 updateInterval) :
     mUpdateInterval(updateInterval)
 {
-    // Get starting ticks
-    mLastTicks = SDL_GetTicks();
-
     // Init SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
@@ -48,7 +45,7 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, Uin
     }
 
     // Create renderer for the window
-    mRenderer = SDL_CreateRenderer( mWindow, -1, SDL_RENDERER_ACCELERATED );
+    mRenderer = SDL_CreateRenderer( mWindow, -1, 0 );
 
     // If rendered could not be created, throw an error
     if (mRenderer == NULL )
@@ -95,9 +92,6 @@ GoSDL::Window::~Window()
 
 void GoSDL::Window::show()
 {
-    // To store the ticks passed between frames
-    Uint32 newTicks;
-
     // To poll events
     SDL_Event e;
 
@@ -105,25 +99,23 @@ void GoSDL::Window::show()
     SDL_ShowWindow(mWindow);
 
     mShouldRun = true;
+    mApplicationActive = true;
 
     // Main game loop
     while (mShouldRun) {
-
-        // Get ticks
-        newTicks = SDL_GetTicks();
-
-        // Get ticks from last frame and compare with framerate
-        if (newTicks - mLastTicks < mUpdateInterval)
-        {
-            SDL_Delay(mUpdateInterval - (newTicks - mLastTicks));
-            continue;
-        }
 
         // Event loop
         while (SDL_PollEvent (&e))
         {
             switch (e.type)
             {
+            case SDL_APP_WILLENTERBACKGROUND:
+                mApplicationActive = false;
+                break;
+
+            case SDL_APP_WILLENTERFOREGROUND:
+                mApplicationActive = true;
+                break;
 
             case SDL_QUIT:
                 // Yes, goto: http://stackoverflow.com/a/1257776/276451
@@ -169,60 +161,77 @@ void GoSDL::Window::show()
             }
         }
 
-        // Process logic
-        update();
-
-        // Process drawing
-        draw();
-
-        // Render the background clear
-        SDL_RenderClear (mRenderer);
-
-        // Iterator for drawing operations
-        GoSDL::DrawingQueueIterator qIt;
-        const GoSDL::DrawingQueueOperation * op;
-
-        // Iterate all pending drawing operations
-        for (qIt = mDrawingQueue.begin(); qIt != mDrawingQueue.end(); ++qIt)
+        if (mApplicationActive)
         {
-            // Get a reference of the current operation
-            op = &(qIt->second);
+            Uint32 gameCycleTicks = SDL_GetTicks();
 
-            // Set transparency
-            SDL_SetTextureAlphaMod(op->mTexture, op->mAlpha);
+            gameLoop();
 
-            // Set coloring
-            SDL_SetTextureColorMod(op->mTexture, op->mColor.r, op->mColor.g, op->mColor.b);
-
-            // Draw the texture
-            int res = SDL_RenderCopyEx(this->mRenderer,
-                             op->mTexture,
-                             NULL,
-                             &(op->mDstRect),
-                             op->mAngle,
-                             NULL,
-                             SDL_FLIP_NONE);
-
-            // Check for errors when drawing
-            if (res != 0)
+            // Limit to framerate
+            gameCycleTicks = SDL_GetTicks() - gameCycleTicks;
+            if (gameCycleTicks < mUpdateInterval)
             {
-                printf("ERROR %s \n", SDL_GetError());
+                SDL_Delay(mUpdateInterval - gameCycleTicks);
             }
         }
-
-        // Empty the drawing queue
-        mDrawingQueue.clear();
-
-        // Update the screen
-        SDL_RenderPresent (mRenderer);
-
-        // Update the ticks
-        mLastTicks = newTicks;
+        else
+        {
+            SDL_WaitEvent(nullptr);
+        }
     }
-
     // Exit point for goto within switch
 exit:
     ;
+}
+
+void GoSDL::Window::gameLoop()
+{
+    // Process logic
+    update();
+
+    // Process drawing
+    draw();
+
+    // Render the background clear
+    SDL_RenderClear (mRenderer);
+
+    // Iterator for drawing operations
+    GoSDL::DrawingQueueIterator qIt;
+    const GoSDL::DrawingQueueOperation * op;
+
+    // Iterate all pending drawing operations
+    for (qIt = mDrawingQueue.begin(); qIt != mDrawingQueue.end(); ++qIt)
+    {
+        // Get a reference of the current operation
+        op = &(qIt->second);
+
+        // Set transparency
+        SDL_SetTextureAlphaMod(op->mTexture, op->mAlpha);
+
+        // Set coloring
+        SDL_SetTextureColorMod(op->mTexture, op->mColor.r, op->mColor.g, op->mColor.b);
+
+        // Draw the texture
+        int res = SDL_RenderCopyEx(this->mRenderer,
+                        op->mTexture,
+                        NULL,
+                        &(op->mDstRect),
+                        op->mAngle,
+                        NULL,
+                        SDL_FLIP_NONE);
+
+        // Check for errors when drawing
+        if (res != 0)
+        {
+            printf("ERROR %s \n", SDL_GetError());
+        }
+    }
+
+    // Empty the drawing queue
+    mDrawingQueue.clear();
+
+    // Update the screen
+    SDL_RenderPresent (mRenderer);
 }
 
 void GoSDL::Window::close()

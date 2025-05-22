@@ -128,14 +128,17 @@ namespace GoSDL {
         // Called when closing the game
         void closeAllGameControllers();
 
+        // Process game logic, drawing and rendering
+        void gameLoop();
+
         /// Running flag
         bool mShouldRun;
 
+        /// Active application flag
+        bool mApplicationActive;
+
         /// Time interval between frames, in milliseconds
         Uint32 mUpdateInterval;
-
-        /// Ticks recorded in last frame
-        Uint32 mLastTicks;
 
         // Whether the mouse is in use
         bool mMouseActive = false;
