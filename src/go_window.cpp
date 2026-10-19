@@ -73,6 +73,9 @@ GoSDL::Window::Window (unsigned width, unsigned height, std::string caption, Uin
 
     // Hide cursor
     SDL_ShowCursor(0);
+
+    mShouldRun = true;
+    mApplicationActive = true;
 }
 
 GoSDL::Window::~Window()
@@ -95,99 +98,95 @@ void GoSDL::Window::show()
     // To poll events
     SDL_Event e;
 
-    // Show the window
-    SDL_ShowWindow(mWindow);
-
-    mShouldRun = true;
-    mApplicationActive = true;
-
-    // Main game loop
-    while (mShouldRun) {
-
-        // Event loop
-        while (SDL_PollEvent (&e))
+    // Event loop
+    while (SDL_PollEvent (&e))
+    {
+        switch (e.type)
         {
-            switch (e.type)
-            {
-            case SDL_APP_WILLENTERBACKGROUND:
-                mApplicationActive = false;
-                break;
+        case SDL_APP_WILLENTERBACKGROUND:
+            mApplicationActive = false;
+            break;
 
-            case SDL_APP_WILLENTERFOREGROUND:
-                mApplicationActive = true;
-                break;
+        case SDL_APP_WILLENTERFOREGROUND:
+            mApplicationActive = true;
+            break;
 
-            case SDL_QUIT:
-                // Yes, goto: http://stackoverflow.com/a/1257776/276451
-                goto exit;
-                break;
+        case SDL_QUIT:
+            mShouldRun = false;
+            break;
 
-            case SDL_KEYDOWN:
-                mMouseActive = false;
-                buttonDown(e.key.keysym.sym);
-                break;
+        case SDL_KEYDOWN:
+            mMouseActive = false;
+            buttonDown(e.key.keysym.sym);
+            break;
 
-            case SDL_KEYUP:
-                buttonUp(e.key.keysym.sym);
-                break;
+        case SDL_KEYUP:
+            buttonUp(e.key.keysym.sym);
+            break;
 
-            case SDL_MOUSEMOTION:
-                mMouseActive = true;
-                mMouseX = e.motion.x;
-                mMouseY = e.motion.y;
-                break;
+        case SDL_MOUSEMOTION:
+            mMouseActive = true;
+            mMouseX = e.motion.x;
+            mMouseY = e.motion.y;
+            break;
 
-            case SDL_MOUSEBUTTONDOWN:
-                mMouseActive = true;
-                mouseButtonDown(e.button.button);
-                break;
+        case SDL_MOUSEBUTTONDOWN:
+            mMouseActive = true;
+            mouseButtonDown(e.button.button);
+            break;
 
-            case SDL_MOUSEBUTTONUP:
-                mouseButtonUp(e.button.button);
-                break;
+        case SDL_MOUSEBUTTONUP:
+            mouseButtonUp(e.button.button);
+            break;
 
-            case SDL_CONTROLLERBUTTONDOWN:
-                mMouseActive = false;
-                controllerButtonDown(e.cbutton.button);
-                break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            mMouseActive = false;
+            controllerButtonDown(e.cbutton.button);
+            break;
 
-            case SDL_CONTROLLERDEVICEADDED:
-                openGameController(e.cdevice.which);
-                break;
+        case SDL_CONTROLLERDEVICEADDED:
+            openGameController(e.cdevice.which);
+            break;
 
-            case SDL_CONTROLLERDEVICEREMOVED:
-                closeDisconnectedGameControllers();
-                break;
-            }
-        }
-
-        if (mApplicationActive)
-        {
-            Uint32 gameCycleTicks = SDL_GetTicks();
-
-            gameLoop();
-
-            // Limit to framerate
-            gameCycleTicks = SDL_GetTicks() - gameCycleTicks;
-            if (gameCycleTicks < mUpdateInterval)
-            {
-                SDL_Delay(mUpdateInterval - gameCycleTicks);
-            }
-        }
-        else
-        {
-            SDL_WaitEvent(nullptr);
+        case SDL_CONTROLLERDEVICEREMOVED:
+            closeDisconnectedGameControllers();
+            break;
         }
     }
-    // Exit point for goto within switch
-exit:
-    ;
+
+    if (mApplicationActive)
+    {
+        gameLoop();
+    }
 }
+
 
 void GoSDL::Window::gameLoop()
 {
-    // Process logic
-    update();
+    // Fixed logic timestep while allowing rendering
+    // on a higher display rate than 60Hz
+    static Uint32 lastTime = 0;
+    static float updateFTimeAcc = 0.0;
+
+    constexpr float kBaseUpdateRateHz = 60.0;
+    constexpr float kUpdateStepMs = 1000.0 / kBaseUpdateRateHz;
+
+    const Uint32 currentTime = SDL_GetTicks();
+
+    float deltaTime = static_cast<float>(currentTime - lastTime);
+    lastTime = currentTime;
+
+    if (deltaTime > 200.0f)
+        deltaTime = 200.0f;
+
+    updateFTimeAcc += deltaTime;
+
+    while (updateFTimeAcc >= kUpdateStepMs)
+    {
+        // Process logic
+        update();
+        updateFTimeAcc -= kUpdateStepMs;
+    }
 
     // Process drawing
     draw();
