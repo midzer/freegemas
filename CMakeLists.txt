@@ -1,5 +1,5 @@
 project(freegemas_project)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 # Append custom gettext path to CMAKE_PREFIX_PATH - only necessary on OS X.
 if (CMAKE_HOST_APPLE)
